@@ -1,5 +1,36 @@
 
+html { 
+	height: 100% 
+}
+
+body { 
+	height: 100%; 
+	margin: 0; 
+	padding: 0 
+}
+
 #head {
-    padding-left: 50% ;
-    /*padding-right: 50%;*/
+    text-align: center;
+	padding-bottom: 50px;
+}
+
+#map-canvas {
+	height: 500px;
+	width: 80%; 
+	margin: 0 auto;
+}
+
+#list {
+	padding: 50px;
+}
+
+.name label {
+	display: block;
+	margin: 0 auto;
+	padding-bottom: 7px;
+	text-align: center;
+}
+
+.go button {
+	margin-top: 10px;
 }

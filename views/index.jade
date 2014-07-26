@@ -3,12 +3,8 @@ html(lang="en")
     head
         meta(name="viewport", content="initial-scale=1.0, user-scalable=no")
         link(rel="stylesheet", href="/bootstrap.min.css")
+        link(rel="stylesheet", href="/freebox-finder.css")
         title Freebox Finder - Find/list freeboxes in your area
-
-        style(type="text/css")
-            | html { height: 100% }
-            | body { height: 100%; margin: 0; padding: 0 }
-            | #map-canvas { height: 100% }
     body
         #head
             #page-title
@@ -16,22 +12,82 @@ html(lang="en")
                     h1 Free-box Finder
             #location
                 #current-location
+                    .heading
+                        h3 Current Location
                     .container
             #set-location
+                .heading
+                    h3 Set Location
                 .container
-                    label(for="new-location") Set Location
-                    input(id="new-location")
-                    button(id="set-location-now") Set
+                    .row
+                        .col-md-4 &nbsp;
+                        div(class='name col-md-2')
+                            label(for="new-location") New Location
+                        div(class='input col-md-2')
+                            input(id="new-location")
+                        .col-md-4 &nbsp;
+                    .row
+                        .col-md-5 &nbsp;
+                        div(class='go col-md-2')
+                            button(id="set-location-now") Set
+                        .col-md-5 &nbsp;
             #search
+                .heading
+                    h3 Search Tags
                 .container
-                    #search-tags
-                        label(for="search-tags-input") Search Tags
-                        input(id="tags")
-                    #search-range
-                        label(for="miles") Within Miles
-                        input(id="miles", type="number", value=1)
-                        button(id="search-now") Search
-        #map-canvas(style="width: 100%; height: 50%") this is the map
+                    .row
+                        .col-md-4 &nbsp;
+                        div(class='name col-md-2')
+                            label(for="search-tags-input") Search Tags
+                        div(class='input col-md-2')
+                            input(id="tags")
+                        .col-md-4 &nbsp;
+                    .row
+                        .col-md-5 &nbsp;
+                        div(class='go col-md-2')
+                            button(id="search-now") Search
+                        .col-md-5 &nbsp;
+            #new-box
+                .heading
+                    h3 List a free-box
+                .container
+                    .row
+                        .col-md-4 &nbsp;
+                        div(class='name col-md-2')
+                            .row
+                                label(for="box-street1") Street 1
+                            .row
+                                label(for="box-street2") Street 2
+                            .row
+                                label(for="box-city") City
+                            .row
+                                label(for="box-state") State
+                            .row
+                                label(for="box-zip") Zip
+                            .row
+                                label(for="box-tags") Tags
+                        div(class='input col-md-2')          
+                            .row
+                                input(id="box-street1")
+                            .row
+                                input(id="box-street2")
+                            .row
+                                input(id="box-city")
+                            .row
+                                input(id="box-state")
+                            .row
+                                input(id="box-zip")
+                            .row 
+                                input(id="box-tags")
+                            
+                        .col-md-4 &nbsp;
+                    .row
+                        .col-md-5 &nbsp;
+                        div(class='go col-md-2')
+                            button(id="newBox") List Box
+                        .col-md-5 &nbsp;
+        #map-canvas
+            p this is the map
         #list
             .container
         script(src="/jquery-1.11.1.js")
