@@ -1,5 +1,10 @@
 # CHANGES
 
+# v0.2
+## v0.2.0
+* renamed Location.prototype.extrapolate to Location.prototype.update
+* 
+
 #v0.1
 ## v0.1.0
 * created client-side FreeboxFinder, Location
