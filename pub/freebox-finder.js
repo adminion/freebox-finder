@@ -260,18 +260,31 @@ function FreeboxFinder () {
 
             var oldZip = self.location.address_components.postal_code.long_name;
 
-            self.location.geocode({address: newAddress}, function (result, status) {
-                if (oldZip !== self.location.address_components.postal_code.long_name) {
-                    getBoxes();
+            console.log('oldZip', oldZip);
 
-                }
+            self.location.geocode({address: newAddress}, function (result, status) {
 
                 if (self.location.geometry.location !== result.geometry.location) {
+
+                    console.log('old/new locations match, NOT updating map!')
                     
                     updateMap(result.geometry.viewport)
                     
+                } else {
+                    console.log('old/new locations DO NOT match, updating map!')
                 }
 
+                var parsed = parseAddressComponents(result);
+
+                if (oldZip !== parsed.postal_code.long_name) {
+                    console.log('old/new zip codes DO NOT match, getting boxes!')
+
+                    getBoxes();
+
+
+                } else {
+                    console.log('old/new zip codes match, NOT getting boxes!')
+                }
             });
 
 
