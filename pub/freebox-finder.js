@@ -3,6 +3,7 @@ var Geocoder = google.maps.Geocoder,
     getCurrentPosition = navigator.geolocation.getCurrentPosition,
     InfoWindow = google.maps.InfoWindow,
     LatLng = google.maps.LatLng,
+    LatLngBounds = google.maps.LatLngBounds,
     Map = google.maps.Map,
     Marker = google.maps.Marker
 
@@ -176,15 +177,15 @@ function FreeboxFinder () {
 
         console.error('locationConstructed')
 
-        console.log(self.location.geometry)
+        console.log('self.location.coords', self.location.coords)
 
         self.map = new Map($('#map-canvas')[0], {
             zoom: 4,
-            center: self.location.geometry.location
+            center: self.location.center()
         });
 
         setLocation()
-        updateMap(self.location.geometry.viewport)
+        updateMap();
         
        // setup socket
         self.socket = io();
@@ -219,8 +220,8 @@ function FreeboxFinder () {
 
         console.error('setLocation')
 
-        var newLocation = "<div class='container'>Latitude: " + self.location.lat()
-                + ", Longitude: " + self.location.lng() + "</div>";
+        var newLocation = "<div class='container'>Latitude: " + self.location.coords.lat
+                + ", Longitude: " + self.location.coords.lng + "</div>";
 
         $('#current-location .container').replaceWith(newLocation)
 
@@ -246,7 +247,7 @@ function FreeboxFinder () {
 
         console.error('socketConnect')
 
-         self.map.addListener('dragend', mapChanged)
+        self.map.addListener('dragend', mapChanged)
         // self.map.addListener('rightClick')
         self.map.addListener('zoom_changed', mapChanged)
 
@@ -267,8 +268,10 @@ function FreeboxFinder () {
                 if (self.location.geometry.location !== result.geometry.location) {
 
                     console.log('old/new locations match, NOT updating map!')
+
+                    self.location.setGeocoded(result, status);
                     
-                    updateMap(result.geometry.viewport)
+                    updateMap()
                     
                 } else {
                     console.log('old/new locations DO NOT match, updating map!')
@@ -304,12 +307,17 @@ function FreeboxFinder () {
             var newBoxLocation = new Location({ address: addressStr}, function newBoxLocationConstructed () {
 
                 console.log('newBoxLocationConstructed')
+
+                console.log('newBoxLocation', newBoxLocation)
+
                 var box = new Box({ 
                     location: newBoxLocation,
                     tags: $('#box-tags').val()
                 })
 
                 self.socket.emit('new-box-now', box);
+
+
             })
                     
             
@@ -330,11 +338,11 @@ function FreeboxFinder () {
     };
 
 
-    function updateMap (viewport) {
+    function updateMap () {
 
         console.error('updateMap')
         
-        self.map.fitBounds(viewport);
+        self.map.fitBounds(self.location.viewport());
         // self.map.setZoom(getBoundsZoomLevel(viewport))
 
     };
@@ -352,10 +360,6 @@ FreeboxFinder.prototype.searchTags = function (tags) {
 };
 
 FreeboxFinder.prototype.listBox = function (box) {
-
-};
-
-FreeboxFinder.prototype.updateMap = function () {
 
 };
 
@@ -403,8 +407,22 @@ function Location (options, callback) {
 
     this.address_components;
     this.formatted_address;
-    this.geometry;
-    this.types
+    this.coords = { 
+        lat: undefined,
+        lng: undefined
+    };
+    this.bounds = {
+        ne: {
+            lat: undefined,
+            lng: undefined,
+        },
+        sw: {
+            lat: undefined,
+            lng: undefined
+        }
+    }
+
+    this.types;
     
     this.update(options, callback);
 }
@@ -419,17 +437,12 @@ Location.prototype.update = function (options, callback) {
     var self = this;
     
     self.geocode(options, function locationUpdated (result, status) {
-
         console.error('locationUpdated')
-        
-        self.address_components = self.parseAddressComponents(result);
-        self.formatted_address = result.formatted_address;
-        self.geometry = result.geometry;
-        self.types = result.types;
 
-        // console.log('self', self);
+        self.setGeocoded(result);
 
         callback()
+
     });
 
 }
@@ -460,12 +473,44 @@ Location.prototype.geocode = function (request, callback) {
 
 }
 
-Location.prototype.lat = function () {
-    return this.geometry.location.k;
+Location.prototype.setGeocoded = function (result, status) {
+
+        
+    console.log('result', result)
+
+    var ne = result.geometry.viewport.getNorthEast();
+    var sw = result.geometry.viewport.getSouthWest();
+
+    this.address_components = this.parseAddressComponents(result);
+    this.formatted_address = result.formatted_address;
+    this.types = result.types;
+    
+    this.coords.lat = result.geometry.location.lat();
+    this.coords.lng = result.geometry.location.lng();
+
+    this.bounds.ne.lat = ne.lat();
+    this.bounds.ne.lng = ne.lng();
+    this.bounds.sw.lat = sw.lat();
+    this.bounds.sw.lng = sw.lng();
+
+    console.log('this', this);
+
 }
 
-Location.prototype.lng = function () {
-    return this.geometry.location.B;
+
+Location.prototype.center = function () {
+
+    return new LatLng(this.coords.lat, this.coords.lng)
+
+}
+
+Location.prototype.viewport = function () {
+
+    var ne = new LatLng(this.bounds.ne.lat, this.bounds.ne.lng);
+    var sw = new LatLng(this.bounds.sw.lat, this.bounds.sw.lng);
+
+    return new LatLngBounds(sw, ne);
+
 }
 
 Location.prototype.parseAddressComponents = function (result) {
@@ -473,7 +518,7 @@ Location.prototype.parseAddressComponents = function (result) {
     console.error('parseAddressComponents')
 
     var component;
-    var parsed = [];
+    var parsed = {};
     var type;
 
     console.log('result', result)
@@ -514,4 +559,8 @@ Location.prototype.toString = function () {
     return locationString;
 }
 
+
+Location.prototype.zip = function () {
+    return this.address_components.postal_code.long_name;
+}
 
