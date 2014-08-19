@@ -1,27 +1,67 @@
 
 // 3rd party modules
 var mongoose = require('mongoose'),
-    util = require('util');
+    util = require('util'),
+    utils = require('techjeffharris-utils');
 
 var Mixed = mongoose.Schema.Types.Mixed;
 
 var locationSchema = new mongoose.Schema({ 
     address_components: Mixed,
     formatted_address: Mixed,
-    geometry: Mixed,
+    bounds: {
+        sw: {
+            lat: { 
+                type: Number, 
+                min: -90,
+                max: 90,
+                required: true
+            },
+            lng: {
+                type: Number,
+                min: -180,
+                max: 180,
+                required: true
+            },
+        },
+        ne: {
+            lat: { 
+                type: Number, 
+                min: -90,
+                max: 90,
+                required: true
+            },
+            lng: {
+                type: Number,
+                min: -180,
+                max: 180,
+                required: true
+            }
+        }
+    },
+    coords: {
+        lat: { 
+            type: Number, 
+            min: -90,
+            max: 90,
+            required: true
+        },
+        lng: {
+            type: Number,
+            min: -180,
+            max: 180,
+            required: true
+        }
+    },
     types: Mixed
 });
 
-locationSchema.methods.coords = function () {
-    return this.location.geometry.location;
-};
-
 locationSchema.methods.lat = function () {
-    return this.location.geometry.location.k;
+    return this.coords.lat;
 };
 
 locationSchema.methods.lng = function () {
-    return this.location.geometry.location.B;
+    return this.coords.lng;
 };
 
 locationSchema.methods.parseAddressComponents = function () {
