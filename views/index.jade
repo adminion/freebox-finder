@@ -13,79 +13,47 @@ html(lang="en")
             #location
                 #current-location
                     .heading
-                        h3 Current Location
+                        h4 Current Location:    
                     .container
-            #set-location
-                .heading
-                    h3 Set Location
-                .container
-                    .row
-                        .col-md-4 &nbsp;
-                        div(class='name col-md-2')
-                            label(for="new-location") New Location
-                        div(class='input col-md-2')
-                            input(id="new-location")
-                        .col-md-4 &nbsp;
-                    .row
-                        .col-md-5 &nbsp;
-                        div(class='go col-md-2')
-                            button(id="set-location-now") Set
-                        .col-md-5 &nbsp;
-            #search
-                .heading
-                    h3 Search Tags
-                .container
-                    .row
-                        .col-md-4 &nbsp;
-                        div(class='name col-md-2')
-                            label(for="search-tags-input") Search Tags
-                        div(class='input col-md-2')
-                            input(id="tags")
-                        .col-md-4 &nbsp;
-                    .row
-                        .col-md-5 &nbsp;
-                        div(class='go col-md-2')
-                            button(id="search-now") Search
-                        .col-md-5 &nbsp;
-            #new-box
-                .heading
-                    h3 List a free-box
-                .container
-                    .row
-                        .col-md-4 &nbsp;
-                        div(class='name col-md-2')
-                            .row
-                                label(for="box-street1") Street 1
-                            .row
-                                label(for="box-street2") Street 2
-                            .row
-                                label(for="box-city") City
-                            .row
-                                label(for="box-state") State
-                            .row
-                                label(for="box-zip") Zip
-                            .row
-                                label(for="box-tags") Tags
-                        div(class='input col-md-2')          
-                            .row
-                                input(id="box-street1")
-                            .row
-                                input(id="box-street2")
-                            .row
-                                input(id="box-city")
-                            .row
-                                input(id="box-state")
-                            .row
-                                input(id="box-zip")
-                            .row 
-                                input(id="box-tags")
-                            
-                        .col-md-4 &nbsp;
-                    .row
-                        .col-md-5 &nbsp;
-                        div(class='go col-md-2')
-                            button(id="new-box-now") List Box
-                        .col-md-5 &nbsp;
+            #nav
+                ul(class="nav nav-tabs", role="tablist")
+                    li.active
+                        a(href="#search", data-toggle="tab", role="tab") Search Tags 
+                    li
+                        a(href="#set-location", data-toggle="tab", role="tab") Set Location
+                    li
+                        a(href="#list", data-toggle="tab" role="tab") List a free-box
+                .tab-content
+                    div(id="search", class="tab-pane active")
+                        .row &nbsp;
+                        .row
+                            .col-md-4 &nbsp;
+                            div(class='input col-md-2')
+                                input(id="tags")
+                            div(class='input col-md-2')
+                                button(id="search-now") Search Tags
+                            .col-md-4 &nbsp;
+                        .row &nbsp;
+                    div(id="set-location", class="tab-pane")
+                        .row &nbsp;
+                        .row
+                            .col-md-4 &nbsp;
+                            div(class='input col-md-2')
+                                input(id="new-location")
+                            div(class='input col-md-2')
+                                button(id="set-location-now") Set Location
+                            .col-md-4 &nbsp;
+                        .row &nbsp;
+                    div(id="list", class="tab-pane")
+                        .row &nbsp;
+                        .row
+                            .col-md-4 &nbsp;
+                            div(class='input col-md-2')
+                                input#box-location
+                                input#box-tags
+                            div(class='input col-md-2')
+                                button(id="new-box-now") List FreeBox
+                            .col-md-4 &nbsp;
         #map-canvas
             p 
         #list
@@ -93,8 +61,8 @@ html(lang="en")
         script(src="/jquery-1.11.1.js")
         // bootstrap - Latest compiled and minified JavaScript
         script(src="/bootstrap.min.js")
-        script(src="http://maps.googleapis.com/maps/api/js?key=AIzaSyDbdCuzVMY5_X5LN4hwNwkteCVxkJayCWM")
         script(src="/socket.io/socket.io.js")
+        script(src="http://maps.googleapis.com/maps/api/js?key=AIzaSyDbdCuzVMY5_X5LN4hwNwkteCVxkJayCWM")
         script(src="/utils.js")
         script(src="/freebox-finder.js")
         script(src="/scripts.js")

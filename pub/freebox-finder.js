@@ -219,8 +219,10 @@ function FreeboxFinder () {
 
         console.error('setLocation')
 
-        var newLocation = "<div class='container'>Latitude: " + self.location.lat()
-                + ", Longitude: " + self.location.lng() + "</div>";
+        var newLocation = "<div class='container'><p>" + self.location.formatted_address + "</p>"
+
+                + "<p>Latitude: " + self.location.lat()
+                + ", Longitude: " + self.location.lng() + "</p></div>";
 
         $('#current-location .container').replaceWith(newLocation)
 
@@ -294,10 +296,7 @@ function FreeboxFinder () {
 
         $('#new-box-now').click(function new_box_clicked () {
 
-            var addressStr = $('#box-street1').val()
-                + (($('#box-street2').val()) ? " and " + $('#box-street2').val() : '')
-                + ', ' + $('#box-city').val()
-                + ', ' + $('#box-state').val() + ' ' + $('#box-zip').val();
+            var addressStr = $('#box-location').val();
 
             console.log('addressStr', addressStr)
 

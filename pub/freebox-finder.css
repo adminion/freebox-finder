@@ -19,10 +19,7 @@ body {
 	width: 80%; 
 	margin: 0 auto;
 	text-align: center;
-}
-
-#list {
-	padding: 50px;
+	margin-bottom: 50px;
 }
 
 .name label {
@@ -32,6 +29,20 @@ body {
 	text-align: center;
 }
 
-.go button {
-	margin-top: 10px;
+.nav-tabs ul {
+	margin: 0 auto; 
+}
+
+.nav-tabs li {
+	position: relative;
+   	float: center;
+   	display: inline-block;
+    margin: 0 auto;
+}
+
+.input input button {
+	margin: 0 auto;
+	position: relative;
+	float: center;
+	display: inline;
 }
