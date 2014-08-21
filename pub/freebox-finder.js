@@ -17,7 +17,7 @@ function FreeboxFinder () {
         var newBody = "<body><h1>Crap...</h1>"
         + "<h2>Your browser sucks.  This isn't going to work.</h2>"
         + "<h3>You should upgrade your browser.</h3>"
-        + "<h4>Actually, you should just use Chrome.</h4></body>"
+        + "<h4>Really, you should just use Chrome.</h4></body>"
         
         $("body").replaceWith(newBody);
 
@@ -51,8 +51,8 @@ function FreeboxFinder () {
 
         var infoWindowOptions,
             position = new LatLng(
-                box.location.geometry.location.k,
-                box.location.geometry.location.B),
+                box.location.coords.lat,
+                box.location.coords.lng),
             markerOptions;
 
         console.log('adding box to map: ', box)
@@ -63,20 +63,20 @@ function FreeboxFinder () {
             position: position
         }
 
-        // var marker = new Marker(markerOptions);
+        var marker = new Marker(markerOptions);
 
-        // self.markers.push(marker);
+        self.markers.push(marker);
 
-        // infoWindowOptions = { 
-        //     content: 'tags: ' + box.tags.join(', '),
-        //     position: position
-        // };
+        infoWindowOptions = { 
+            content: 'tags: ' + box.tags.join(', '),
+            position: position
+        };
 
-        // var infoWindow = new InfoWindow(infoWindowOptions);
+        var infoWindow = new InfoWindow(infoWindowOptions);
 
-        // self.infoWindows.push(infoWindow);
+        self.infoWindows.push(infoWindow);
 
-        // infoWindow.open(self.map, marker);
+        infoWindow.open(self.map, marker);
 
     };
 
@@ -128,11 +128,11 @@ function FreeboxFinder () {
         $('#tags')
             .val()
             .split(', ')
-            .forEach(function(piece) {
+            .forEach(function(tag) {
 
-                if (piece || piece !== '') {
-                    console.log('piece', piece)
-                    self.tags.push(piece.trim())
+                if (tag || tag !== '') {
+                    console.log('tag', tag)
+                    self.tags.push(tag.trim())
                 }
             });
 
@@ -239,6 +239,13 @@ function FreeboxFinder () {
 
         console.log('self.boxes', self.boxes)
 
+        for (var marker in self.markers) {
+            self.markers[marker].setMap();
+        }
+
+        self.infoWindows = [];
+        self.markers = [];
+
         boxes.forEach(function (box) {
             addBoxToMap(box)
 
@@ -267,19 +274,20 @@ function FreeboxFinder () {
 
             self.location.geocode({address: newAddress}, function (result, status) {
 
-                if (self.location.geometry.location !== result.geometry.location) {
+                if (self.location.sameAs(result.geometry.location)) {
 
                     console.log('old/new locations match, NOT updating map!')
+
+                    
+                } else {
+                    console.log('old/new locations DO NOT match, updating map!')
 
                     self.location.setGeocoded(result, status);
                     
                     updateMap()
-                    
-                } else {
-                    console.log('old/new locations DO NOT match, updating map!')
                 }
 
-                var parsed = parseAddressComponents(result);
+                var parsed = self.location.parseAddressComponents(result);
 
                 if (oldZip !== parsed.postal_code.long_name) {
                     console.log('old/new zip codes DO NOT match, getting boxes!')
@@ -298,6 +306,7 @@ function FreeboxFinder () {
         $('#search-now').click(getBoxes);
 
         $('#new-box-now').click(function new_box_clicked () {
+            console.error('new_box_clicked')
 
             var addressStr = $('#box-location').val();
 
@@ -313,6 +322,8 @@ function FreeboxFinder () {
                     location: newBoxLocation,
                     tags: $('#box-tags').val()
                 })
+
+                console.log('newBox', box);
 
                 self.socket.emit('new-box-now', box);
 
@@ -500,8 +511,21 @@ Location.prototype.setGeocoded = function (result, status) {
 Location.prototype.center = function () {
 
     return new LatLng(this.coords.lat, this.coords.lng)
-
 }
+
+Location.prototype.lat = function () {
+    return this.coords.lat;
+}
+
+Location.prototype.lng = function () {
+    return this.coords.lng;
+}
+
+Location.prototype.sameAs = function (testLocation) {
+
+    return (this.coords.lat === testLocation.lat() && this.coords.lng === testLocation.lng())
+
+};
 
 Location.prototype.viewport = function () {
 
