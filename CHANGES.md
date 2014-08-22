@@ -3,6 +3,15 @@
 # v0.2
 ## v0.2.0
 * renamed Location.prototype.extrapolate to Location.prototype.update
+* box model now has helpful methods for use on the server
+* updated box model structure to enable easier/self-explanitory parsing of locations
+* updated UI to utilize bootstrap.js tabs for search/set-location/list-box
+* list box is only a formatted address in one input rather than many inputs
+* location now stores `coords` and `bounds` rather than a raw copy of google's geocoded object.
+* Location.prototype now has center(), viewport(), lat(), lng(), setGeocoded()
+* once connected, client asks for boxes in their given zip code.
+* realtime updates to boxes within a given zip code works properly
+* when the map updates, if the new location's zip is not equal to the old zip, boxes are updated. 
 
 #v0.1
 ## v0.1.0
