@@ -13,25 +13,28 @@ html(lang="en")
             #location
                 #current-location
                     .heading
-                        h4 Current Location:    
+                        h4 Current Location [&nbsp;
+                            a(id="get-location") get
+                            |&nbsp;]
                     .container
             #nav
                 ul(class="nav nav-tabs", role="tablist")
                     li.active
-                        a(href="#search", data-toggle="tab", role="tab") Search Tags 
+                        a(href="#search", data-toggle="tab", role="tab") Search 
                     li
-                        a(href="#set-location", data-toggle="tab", role="tab") Set Location
+                        a(href="#set-location", data-toggle="tab", role="tab") Location
                     li
-                        a(href="#list", data-toggle="tab" role="tab") List a free-box
+                        a(href="#list", data-toggle="tab" role="tab") New Box
                 .tab-content
                     div(id="search", class="tab-pane active")
                         .row &nbsp;
                         .row
                             .col-md-4 &nbsp;
                             div(class='input col-md-2')
+                                label tags&nbsp;&nbsp;
                                 input(id="tags")
                             div(class='input col-md-2')
-                                button(id="search-now") Search Tags
+                                button(id="search-now") Search
                             .col-md-4 &nbsp;
                         .row &nbsp;
                     div(id="set-location", class="tab-pane")
@@ -39,6 +42,7 @@ html(lang="en")
                         .row
                             .col-md-4 &nbsp;
                             div(class='input col-md-2')
+                                label new location
                                 input(id="new-location")
                             div(class='input col-md-2')
                                 button(id="set-location-now") Set Location
@@ -49,15 +53,21 @@ html(lang="en")
                         .row
                             .col-md-4 &nbsp;
                             div(class='input col-md-2')
-                                input#box-location
-                                input#box-tags
+                                label box location
+                                input#new-box-location 
+                                label box tags
+                                input#new-box-tags
                             div(class='input col-md-2')
                                 button(id="new-box-now") List FreeBox
                             .col-md-4 &nbsp;
         #map-canvas
             p 
         #list
-            .container
+            
+        #footer
+            a(id="termsTrigger") Terms and Conditions
+            #terms
+                p=license
         script(src="/jquery-1.11.1.js")
         // bootstrap - Latest compiled and minified JavaScript
         script(src="/bootstrap.min.js")

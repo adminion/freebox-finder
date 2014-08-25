@@ -32,18 +32,42 @@ function FreeboxFinder () {
 
     self.boxes = [];
     self.infoWindows = [];
+    self.initialized = false;
     self.markers = [];
     self.tags = [];
 
-    // get the current location
-    navigator.geolocation.getCurrentPosition(function navigator_currentPosition (position) {
-        console.error('navigator_currentPosition')
+    console.log('localStorage', localStorage)
 
-        var location = new LatLng(position.coords.latitude, position.coords.longitude)  
+    // check localStorage for a cached location
+    if (localStorage.getItem("FreeboxFinder_location")) {
 
-        self.location = new self.Location({ location: location }, locationConstructed);        
+        console.log('using cached location!');
 
-    }, getCurrentPositionError );
+        var cached = JSON.parse(localStorage.getItem("FreeboxFinder_location")).location;
+
+        console.log('cached', cached)
+        
+        self.location = new self.Location({
+            location: new LatLng(cached.lat, cached.lng)
+        }, locationConstructed);
+
+    }
+
+    else {
+
+        console.log('no cached position, using html5 navigator!');
+        
+        // get the current location
+        navigator.geolocation.getCurrentPosition(function navigator_currentPosition (position) {
+            console.error('navigator_geolocation_getCurrentPosition')
+
+            var location = new LatLng(position.coords.latitude, position.coords.longitude)  
+
+            self.location = new self.Location({ location: location }, locationConstructed);
+
+        }, getCurrentPositionError );
+    }
+
 
     function addBoxToMap (box) {
 
@@ -67,8 +91,15 @@ function FreeboxFinder () {
 
         self.markers.push(marker);
 
+        var query = box.location.formatted_address.split(' ').join('+');
+
+        console.log('query', query);
+
+        var infoWindowContent = '<p><strong>tags:</strong> ' + box.tags.join(', ') + '</p>'
+            + '<p><strong>location:</strong> <a href="geo:0,0?q=' + query + '">' + box.location.formatted_address + '</a></p>';
+
         infoWindowOptions = { 
-            content: 'tags: ' + box.tags.join(', '),
+            content: infoWindowContent,
             position: position
         };
 
@@ -76,7 +107,10 @@ function FreeboxFinder () {
 
         self.infoWindows.push(infoWindow);
 
-        infoWindow.open(self.map, marker);
+        marker.addListener('click', function () {
+            infoWindow.open(self.map, marker);
+        })
+
 
     };
 
@@ -132,20 +166,16 @@ function FreeboxFinder () {
 
                 if (tag || tag !== '') {
                     console.log('tag', tag)
-                    self.tags.push(tag.trim())
+                    self.tags.push(tag.trim().toLowerCase())
                 }
             });
 
-        var zip = self.location.address_components.postal_code.long_name
-
-        console.log('zip', zip)
-
-        var logStr = 'getting boxes in ' + zip
+        var logStr = 'getting boxes in ' + self.location.cityState();
         if (self.tags.length >0)  {
             logStr += ' with tags "' + self.tags.join('", "') + '"'
         }
 
-        self.socket.emit('get-boxes', zip, self.tags );
+        self.socket.emit('get-boxes', self.location.cityState(), self.tags );
     };
 
     function getCurrentPositionError(error) {
@@ -184,9 +214,9 @@ function FreeboxFinder () {
             center: self.location.center()
         });
 
-        setLocation()
-        updateMap();
-        
+        self.map.fitBounds(self.location.viewport());
+        setLocation();
+
        // setup socket
         self.socket = io();
 
@@ -205,27 +235,35 @@ function FreeboxFinder () {
 
         console.error('mapChanged')
 
-        var oldZip = self.location.zip;
+        var oldZip = self.location.zip();
 
-        var opts = { 
-            location: self.map.center
-        }
+        self.location.geocode({ location: self.map.center }, newLocationGeocoded);
 
-        self.location.update(opts, function mapUpdated () {
-            setLocation();
-        });
+        function newLocationGeocoded (result, status) {
+
+            var parsed = self.location.parseAddressComponents(result);
+
+            if (self.location.formatted_address !== result.formatted_address) {
+                self.location.setGeocoded(result)
+                setLocation();
+
+                if (oldZip !== parsed.postal_code.long_name) {
+                    getBoxes();
+                }
+            }  
+        };
     };
 
     function setLocation () {
 
         console.error('setLocation')
 
-        var newLocation = "<div class='container'><p>" + self.location.formatted_address + "</p>"
-
-                + "<p>Latitude: " + self.location.lat()
-                + ", Longitude: " + self.location.lng() + "</p></div>";
+        var newLocation = "<div class='container'><p>" + self.location.formatted_address + "</p></div>";
 
         $('#current-location .container').replaceWith(newLocation)
+
+        // store a LatLngLiteral to localStorage to speed up map generation and help remedy inaccurate location resolution
+        localStorage.setItem('FreeboxFinder_location', JSON.stringify({ location: self.location.coords }) );
 
     };
 
@@ -254,84 +292,71 @@ function FreeboxFinder () {
 
     function socketConnect () {
 
-        console.error('socketConnect')
-
-        self.map.addListener('dragend', mapChanged)
-        // self.map.addListener('rightClick')
-        self.map.addListener('zoom_changed', mapChanged)
+        console.error('socketConnect');
 
         getBoxes();
 
-        $('#set-location-now').click(function set_location_now_clicked () {
-            console.error('set location now!')
+        if (!self.initialized) {
 
-            var newAddress = $('#new-location').val();
-            console.log('newAddress', newAddress)
+            self.map.addListener('dragend', mapChanged);
+           
+            self.map.addListener('zoom_changed', mapChanged);
 
-            var oldZip = self.location.address_components.postal_code.long_name;
+            $('#set-location-now').click(function set_location_now_clicked () {
+                console.error('set location now!');
 
-            console.log('oldZip', oldZip);
+                var newAddress = $('#new-location').val();
+                console.log('newAddress', newAddress);
 
-            self.location.geocode({address: newAddress}, function (result, status) {
+                self.location.geocode({address: newAddress}, function (result, status) {
+                    self.map.fitBounds(result.geometry.viewport);
+                });
+            });
 
-                if (self.location.sameAs(result.geometry.location)) {
+            $('#get-location').click(function getLocation () {
+                // get the current location
+                navigator.geolocation.getCurrentPosition(function (position) {
 
-                    console.log('old/new locations match, NOT updating map!')
+                    var location = new LatLng(position.coords.latitude, position.coords.longitude)  
 
-                    
-                } else {
-                    console.log('old/new locations DO NOT match, updating map!')
+                    self.location.update({ location: location }, function () {
+                        self.map.fitBounds(self.location.viewport());
+                    });
 
-                    self.location.setGeocoded(result, status);
-                    
-                    updateMap()
-                }
+                }, getCurrentPositionError);
+            });
 
-                var parsed = self.location.parseAddressComponents(result);
+            $('#search-now').click(getBoxes);
 
-                if (oldZip !== parsed.postal_code.long_name) {
-                    console.log('old/new zip codes DO NOT match, getting boxes!')
+            $('#new-box-location').attr('placeholder', self.location.formatted_address);
 
-                    getBoxes();
+            $('#new-box-now').click(function new_box_clicked () {
+                console.error('new_box_clicked');
 
+                var addressStr = $('#new-box-location').val() || self.location.formatted_address;
 
-                } else {
-                    console.log('old/new zip codes match, NOT getting boxes!')
-                }
+                console.log('addressStr', addressStr);
+
+                var newBoxLocation = new Location({ address: addressStr}, function newBoxLocationConstructed () {
+
+                    console.log('newBoxLocationConstructed');
+
+                    console.log('newBoxLocation', newBoxLocation);
+
+                    var box = new Box({ 
+                        location: newBoxLocation,
+                        tags: $('#new-box-tags').val().toLowerCase()
+                    });
+
+                    console.log('newBox', box);
+
+                    self.socket.emit('new-box-now', box);
+                });                
             });
 
 
-        });
-
-        $('#search-now').click(getBoxes);
-
-        $('#new-box-now').click(function new_box_clicked () {
-            console.error('new_box_clicked')
-
-            var addressStr = $('#box-location').val();
-
-            console.log('addressStr', addressStr)
-
-            var newBoxLocation = new Location({ address: addressStr}, function newBoxLocationConstructed () {
-
-                console.log('newBoxLocationConstructed')
-
-                console.log('newBoxLocation', newBoxLocation)
-
-                var box = new Box({ 
-                    location: newBoxLocation,
-                    tags: $('#box-tags').val()
-                })
-
-                console.log('newBox', box);
-
-                self.socket.emit('new-box-now', box);
-
-
-            })
-                    
-            
-        });
+            self.initialized = true;
+        }
 
     };
 
@@ -346,17 +371,6 @@ function FreeboxFinder () {
 
         addBoxToMap(box);
     };
-
-
-    function updateMap () {
-
-        console.error('updateMap')
-        
-        self.map.fitBounds(self.location.viewport());
-        // self.map.setZoom(getBoundsZoomLevel(viewport))
-
-    };
-
 
 };
 
@@ -440,20 +454,14 @@ function Location (options, callback) {
 FreeboxFinder.prototype.Location = Location;
 
 
-Location.prototype.update = function (options, callback) {
+Location.prototype.center = function () {
 
-    console.error('Location.update')
+    return new LatLng(this.coords.lat, this.coords.lng)
+}
 
-    var self = this;
-    
-    self.geocode(options, function locationUpdated (result, status) {
-        console.error('locationUpdated')
+Location.prototype.cityState = function () {
 
-        self.setGeocoded(result);
-
-        callback()
-
-    });
+    return this.address_components.locality.long_name + ', ' + this.address_components.administrative_area_level_1.short_name;
 
 }
 
@@ -478,39 +486,11 @@ Location.prototype.geocode = function (request, callback) {
         } else {
 
             console.log('google.maps.Geocoder status:', status)
+
+
         }
     });
 
-}
-
-Location.prototype.setGeocoded = function (result, status) {
-
-        
-    console.log('result', result)
-
-    var ne = result.geometry.viewport.getNorthEast();
-    var sw = result.geometry.viewport.getSouthWest();
-
-    this.address_components = this.parseAddressComponents(result);
-    this.formatted_address = result.formatted_address;
-    this.types = result.types;
-    
-    this.coords.lat = result.geometry.location.lat();
-    this.coords.lng = result.geometry.location.lng();
-
-    this.bounds.ne.lat = ne.lat();
-    this.bounds.ne.lng = ne.lng();
-    this.bounds.sw.lat = sw.lat();
-    this.bounds.sw.lng = sw.lng();
-
-    console.log('this', this);
-
-}
-
-
-Location.prototype.center = function () {
-
-    return new LatLng(this.coords.lat, this.coords.lng)
 }
 
 Location.prototype.lat = function () {
@@ -521,20 +501,6 @@ Location.prototype.lng = function () {
     return this.coords.lng;
 }
 
-Location.prototype.sameAs = function (testLocation) {
-
-    return (this.coords.lat === testLocation.lat() && this.coords.lng === testLocation.lng())
-
-};
-
-Location.prototype.viewport = function () {
-
-    var ne = new LatLng(this.bounds.ne.lat, this.bounds.ne.lng);
-    var sw = new LatLng(this.bounds.sw.lat, this.bounds.sw.lng);
-
-    return new LatLngBounds(sw, ne);
-
-}
 
 Location.prototype.parseAddressComponents = function (result) {
 
@@ -562,6 +528,36 @@ Location.prototype.parseAddressComponents = function (result) {
 
 }
 
+Location.prototype.sameAs = function (testLocation) {
+
+    return (this.coords.lat === testLocation.lat() && this.coords.lng === testLocation.lng())
+
+};
+
+Location.prototype.setGeocoded = function (result, status) {
+
+        
+    console.log('result', result)
+
+    var ne = result.geometry.viewport.getNorthEast();
+    var sw = result.geometry.viewport.getSouthWest();
+
+    this.address_components = this.parseAddressComponents(result);
+    this.formatted_address = result.formatted_address;
+    this.types = result.types;
+    
+    this.coords.lat = result.geometry.location.lat();
+    this.coords.lng = result.geometry.location.lng();
+
+    this.bounds.ne.lat = ne.lat();
+    this.bounds.ne.lng = ne.lng();
+    this.bounds.sw.lat = sw.lat();
+    this.bounds.sw.lng = sw.lng();
+
+    console.log('this', this);
+
+}
+
 /**
  *  Location.prototype.toString
  *
@@ -569,19 +565,35 @@ Location.prototype.parseAddressComponents = function (result) {
  */
 Location.prototype.toString = function () {
         
-    var locationString = this.street1;
-
-    if (this.street2) {
-        locationString += " and " + this.street2;
-    }
-
-    locationString += ", " + this.city + ", " + this.state + " " + this.zip
-
-    console.log('locationString', locationString);
-
-    return locationString;
+    return this.formatted_address;
 }
 
+Location.prototype.update = function (options, callback) {
+
+    console.error('Location.update')
+
+    var self = this;
+    
+    self.geocode(options, function locationUpdated (result, status) {
+        console.error('locationUpdated')
+
+        self.setGeocoded(result);
+
+        callback()
+
+    });
+
+}
+
+
+Location.prototype.viewport = function () {
+
+    var ne = new LatLng(this.bounds.ne.lat, this.bounds.ne.lng);
+    var sw = new LatLng(this.bounds.sw.lat, this.bounds.sw.lng);
+
+    return new LatLngBounds(sw, ne);
+
+}
 
 Location.prototype.zip = function () {
     return this.address_components.postal_code.long_name;

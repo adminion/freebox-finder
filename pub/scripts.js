@@ -7,4 +7,8 @@ $(document).ready(function () {
 
     myFreeboxFinder = new FreeboxFinder()
 
+    $('#termsTrigger').click(function () {
+        $('#terms').toggle();
+    }) 
+
 });
