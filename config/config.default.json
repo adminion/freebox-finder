@@ -1,0 +1,8 @@
+{
+    "mongodb": {
+        "uri": "mongodb://localhost/FreeboxFinder",
+        "options": {}
+    },
+    "port": 80,
+    "shutdownTimeout": 2000
+}

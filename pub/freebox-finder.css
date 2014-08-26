@@ -1,0 +1,63 @@
+
+html { 
+	height: 100% 
+}
+
+body { 
+	height: 100%; 
+	margin: 0; 
+	padding: 0 
+}
+
+.name label {
+	display: block;
+	margin: 0 auto;
+	padding-bottom: 7px;
+	text-align: center;
+}
+
+.nav-tabs ul {
+	margin: 0 auto; 
+}
+
+.nav-tabs li {
+	position: relative;
+   	float: center;
+   	display: inline-block;
+    margin: 0 auto;
+}
+
+.input-boxes input button {
+	margin: 0 auto;
+	position: relative;
+	float: center;
+	display: inline;
+}
+
+#current-location p {
+	font-size: 20px;
+}
+
+#footer {
+	text-align: center;
+	margin: 20px auto;
+}
+
+#head {
+    text-align: center;
+}
+
+#map-canvas {
+	height: 500px;
+	width: 80%; 
+	margin: 20px auto;
+	text-align: center;
+}
+
+#nav { 
+	height: 150px;
+}
+
+#terms {
+	display: none;
+}
