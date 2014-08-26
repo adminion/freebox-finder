@@ -27,13 +27,16 @@ body {
     margin: 0 auto;
 }
 
-.input input button {
+.input-boxes input button {
 	margin: 0 auto;
 	position: relative;
 	float: center;
 	display: inline;
 }
 
+#current-location p {
+	font-size: 20px;
+}
 
 #footer {
 	text-align: center;
@@ -49,6 +52,10 @@ body {
 	width: 80%; 
 	margin: 20px auto;
 	text-align: center;
+}
+
+#nav { 
+	height: 150px;
 }
 
 #terms {

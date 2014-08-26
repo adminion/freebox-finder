@@ -258,9 +258,10 @@ function FreeboxFinder () {
 
         console.error('setLocation')
 
-        var newLocation = "<div class='container'><p>" + self.location.formatted_address + "</p></div>";
+        var newLocation = "<div class='container'><p>" + self.location.cityState() + "</p></div>";
 
         $('#current-location .container').replaceWith(newLocation)
+        $('#new-box-location').attr('placeholder', self.location.formatted_address);
 
         // store a LatLngLiteral to localStorage to speed up map generation and help remedy inaccurate location resolution
         localStorage.setItem('FreeboxFinder_location', JSON.stringify({ location: self.location.coords }) );
@@ -299,44 +300,68 @@ function FreeboxFinder () {
         if (!self.initialized) {
 
             self.map.addListener('dragend', mapChanged);
-           
             self.map.addListener('zoom_changed', mapChanged);
 
-            $('#set-location-now').click(function set_location_now_clicked () {
-                console.error('set location now!');
-
-                var newAddress = $('#new-location').val();
-                console.log('newAddress', newAddress);
-
-                self.location.geocode({address: newAddress}, function (result, status) {
-                    self.map.fitBounds(result.geometry.viewport);
-                });
-            });
-
-            $('#get-location').click(function getLocation () {
-                // get the current location
-                navigator.geolocation.getCurrentPosition(function (position) {
-
-                    var location = new LatLng(position.coords.latitude, position.coords.longitude)  
-
-                    self.location.update({ location: location }, function () {
-                        self.map.fitBounds(self.location.viewport());
-                    });
-
-                }, getCurrentPositionError);
+            $('#get-location').click(getLocation);
+            $('#set-location-now').click(set_location_now_clicked);
+            $('#new-location').keyup(function (event) {
+                if (event.which === 13) {
+                    set_location_now_clicked();
+                }
             });
 
             $('#search-now').click(getBoxes);
+            $('#tags').keyup(function (event) {
+                if (event.which === 13) {
+                    getBoxes()
+                }
+            });
 
-            $('#new-box-location').attr('placeholder', self.location.formatted_address);
+            $('#new-box-location').attr('placeholder', self.location.formatted_address)
+                .keyup(function (event) {
+                    if (event.which === 13) {
+                        new_box_clicked()
+                    }
+                });
 
-            $('#new-box-now').click(function new_box_clicked () {
-                console.error('new_box_clicked');
+            $('#new-box-now').click(new_box_clicked);
 
-                var addressStr = $('#new-box-location').val() || self.location.formatted_address;
+            self.initialized = true;
+        }
 
-                console.log('addressStr', addressStr);
+        function getLocation () {
+            // get the current location
+            navigator.geolocation.getCurrentPosition(function (position) {
 
+                var location = new LatLng(position.coords.latitude, position.coords.longitude)  
+
+                self.location.update({ location: location }, function () {
+                    self.map.fitBounds(self.location.viewport());
+                    setLocation();
+                });
+
+            }, getCurrentPositionError);
+        };
+
+        function new_box_clicked () {
+            console.error('new_box_clicked');
+
+            var addressStr = $('#new-box-location').val() || self.location.formatted_address;
+            var tagsArr = $('#new-box-tags').val().toLowerCase().split(',')
+            var tags =[]
+
+            console.log('tagsArr', tagsArr)
+
+            if (tagsArr.length > 0) {
+                tagsArr.forEach(function (tag) {
+                    console.log('tag', tag);
+                    tags.push(tag.trim());
+                });
+            }
+            
+            console.log('addressStr', addressStr);
+
+            if (addressStr.length >= 2 && tags.length >= 1) {
                 var newBoxLocation = new Location({ address: addressStr}, function newBoxLocationConstructed () {
 
                     console.log('newBoxLocationConstructed');
@@ -345,18 +370,31 @@ function FreeboxFinder () {
 
                     var box = new Box({ 
                         location: newBoxLocation,
-                        tags: $('#new-box-tags').val().toLowerCase()
+                        tags: tags
                     });
 
                     console.log('newBox', box);
 
                     self.socket.emit('new-box-now', box);
                 });                
+            }
+
+            else {
+                alert('You need to enter at least a ')
+            }
+
+        };
+
+        function set_location_now_clicked () {
+            console.error('set location now!');
+
+            var newAddress = $('#new-location').val();
+            console.log('newAddress', newAddress);
+
+            self.location.geocode({address: newAddress}, function (result, status) {
+                self.map.fitBounds(result.geometry.viewport);
             });
-
-
-            self.initialized = true;
-        }
+        };
 
     };
 
@@ -461,7 +499,7 @@ Location.prototype.center = function () {
 
 Location.prototype.cityState = function () {
 
-    return this.address_components.locality.long_name + ', ' + this.address_components.administrative_area_level_1.short_name;
+    return this.address_components.locality.short_name + ', ' + this.address_components.administrative_area_level_1.short_name;
 
 }
 

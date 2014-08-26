@@ -12,53 +12,46 @@ html(lang="en")
                     h1 Free-box Finder
             #location
                 #current-location
-                    .heading
-                        h4 Current Location [&nbsp;
-                            a(id="get-location") get
-                            |&nbsp;]
                     .container
             #nav
                 ul(class="nav nav-tabs", role="tablist")
                     li.active
-                        a(href="#search", data-toggle="tab", role="tab") Search 
+                        a(href="#nav-search", data-toggle="tab", role="tab") Search 
                     li
-                        a(href="#set-location", data-toggle="tab", role="tab") Location
+                        a(href="#nav-location", data-toggle="tab", role="tab") Location
                     li
-                        a(href="#list", data-toggle="tab" role="tab") New Box
+                        a(href="#nav-new-box", data-toggle="tab" role="tab") New Box
                 .tab-content
-                    div(id="search", class="tab-pane active")
-                        .row &nbsp;
+                    div(id="nav-search", class="tab-pane active")
                         .row
                             .col-md-4 &nbsp;
-                            div(class='input col-md-2')
-                                label tags&nbsp;&nbsp;
-                                input(id="tags")
-                            div(class='input col-md-2')
+                            div(class='input-boxes col-md-4')
+                                input(id="tags", placeholder="books, clothes, music, etc.")
                                 button(id="search-now") Search
                             .col-md-4 &nbsp;
                         .row &nbsp;
-                    div(id="set-location", class="tab-pane")
-                        .row &nbsp;
+                    div(id="nav-location", class="tab-pane")
                         .row
                             .col-md-4 &nbsp;
-                            div(class='input col-md-2')
-                                label new location
-                                input(id="new-location")
-                            div(class='input col-md-2')
+                            div(class="input-boxes col-md-4")
+                                input(id='track-location', type='checkbox')
+                                label(for='track-location') Track?
+                        .row
+                            .col-md-4 &nbsp;
+                            div(class='input-boxes col-md-4')
+                                input(id="new-location", placeholder="se 12th and mall, portland")
                                 button(id="set-location-now") Set Location
                             .col-md-4 &nbsp;
                         .row &nbsp;
-                    div(id="list", class="tab-pane")
-                        .row &nbsp;
+                    div(id="nav-new-box", class="tab-pane")
                         .row
                             .col-md-4 &nbsp;
-                            div(class='input col-md-2')
-                                label box location
-                                input#new-box-location 
-                                label box tags
-                                input#new-box-tags
-                            div(class='input col-md-2')
-                                button(id="new-box-now") List FreeBox
+                            div(class='input-boxes col-md-4')
+                                .row
+                                    input#new-box-location 
+                                .row
+                                    input(id='new-box-tags', placeholder='books, clothes, music, etc.')
+                                    button(id="new-box-now") List FreeBox
                             .col-md-4 &nbsp;
         #map-canvas
             p 
