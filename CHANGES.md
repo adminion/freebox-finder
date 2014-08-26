@@ -14,6 +14,7 @@
 * when the map updates, if the new location's cityState is not equal to the old cityState, boxes are updated. 
 * location coords saved in localStorage.FreeboxFinder_location to speed up refreshes
 * Added Terms of Service to UI
+* added "Fork me on GitHub" ribbon
 
 #v0.1
 ## v0.1.0
