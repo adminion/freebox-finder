@@ -16,6 +16,7 @@
 * Added Terms of Service to UI
 * added "Fork me on GitHub" ribbon
 * implement track location functionality
+* debug output now "teed" to debug-log
 
 #v0.1
 ## v0.1.0
