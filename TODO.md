@@ -9,8 +9,6 @@
 * add Places search to location input
 
 ## v0.2.0
-* implement track location functionality
-* if "track" location isn't enabled, enable a manual "get location" button
 * only add link to google maps if requested via android
 * clean UI
 
