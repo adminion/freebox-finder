@@ -27,6 +27,10 @@ body {
     margin: 0 auto;
 }
 
+.info {
+	text-align: center;
+}
+
 .input-boxes input button {
 	margin: 0 auto;
 	position: relative;
@@ -34,7 +38,7 @@ body {
 	display: inline;
 }
 
-#current-location p {
+#cityState p {
 	font-size: 20px;
 }
 
