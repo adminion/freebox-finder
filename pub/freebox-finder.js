@@ -198,7 +198,7 @@ function FreeboxFinder () {
                 break;
         }
 
-        $('#current-location .container').replaceWith("<div class='container'>" + msg + " </div>")
+        $('#cityState .container').replaceWith("<div class='container'>" + msg + " </div>")
         console.log(msg)
                 
     };
@@ -258,9 +258,8 @@ function FreeboxFinder () {
 
         console.error('setLocation')
 
-        var newLocation = "<div class='container'><p>" + self.location.cityState() + "</p></div>";
-
-        $('#current-location .container').replaceWith(newLocation)
+        $('#cityState .container').replaceWith("<div class='container'><p>" + self.location.cityState() + "</p></div>");
+        $('#current-location .container').replaceWith("<div class='container'><p>" + self.location.formatted_address + "</p></div>");
         $('#new-box-location').attr('placeholder', self.location.formatted_address);
 
         // store a LatLngLiteral to localStorage to speed up map generation and help remedy inaccurate location resolution
@@ -294,6 +293,8 @@ function FreeboxFinder () {
     function socketConnect () {
 
         console.error('socketConnect');
+        
+        var watchID;
 
         getBoxes();
 
@@ -303,6 +304,34 @@ function FreeboxFinder () {
             self.map.addListener('zoom_changed', mapChanged);
 
             $('#get-location').click(getLocation);
+            $('#track-location').change(function track_location_change () {
+                if (this.checked) {
+                    console.log('tracking enabled');
+
+                    watchID = navigator.geolocation.watchPosition(function (position) {
+                        var location = new LatLng(position.coords.latitude, position.coords.longitude)  
+
+                        self.location.update({ location: location }, function () {
+                            self.map.fitBounds(self.location.viewport());
+                            setLocation();
+                        });
+                    });
+
+                    // getLocation();
+
+                }
+
+                else if (watchID) { 
+                    console.log('tracking disabled');
+                    navigator.geolocation.clearWatch(watchID);
+                    watchID = undefined;
+                }
+
+                else {
+                    console.log('hmmmm not sure what happened there...');
+                }
+            });
+
             $('#set-location-now').click(set_location_now_clicked);
             $('#new-location').keyup(function (event) {
                 if (event.which === 13) {
