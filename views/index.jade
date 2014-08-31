@@ -44,7 +44,7 @@ html(lang="en")
                                 .container
                         .row
                             .input-boxes
-                                input(id="new-location", placeholder="se 12th and mall, portland")
+                                input(id="new-location", size="50", placeholder="portland, or")
                                 | &nbsp;
                                 button(id="set-location-now") Set Location
                         .row &nbsp;
@@ -53,15 +53,16 @@ html(lang="en")
                         .row
                             .input-boxes
                                 .row
-                                    input#new-box-location 
-                                .row
                                     input(id='new-box-tags', placeholder='books, clothes, music, etc.')
+                                .row
+                                    input(id='new-box-location', size="50")
                                 .row
                                     button(id="new-box-now") List FreeBox
         #map-canvas
             p 
-        #list
-            
+        #boxes-list
+            h3 Search Results
+            #results
         #footer
             a(id="termsTrigger") Terms and Conditions
             #terms

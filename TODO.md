@@ -2,14 +2,10 @@
 
 # v0.2
 ## v0.2.1
-* add list of found boxes in order below the map, letter them on the map; populate when boxes received.
 * add radio radio button for set-location and list-box to expect formatted address OR coords.
 * add context menu map--center here, directions to/from here, list box here
 * play with marker/infowindow z index and click event.
 * add Places search to location input
-
-## v0.2.0
-* only add link to google maps if requested via android
 
 # v0.1
 ## v0.1.0
