@@ -38,6 +38,15 @@ body {
 	display: inline;
 }
 
+#boxes-list {
+	text-align: center;
+}
+
+#boxes-list ol {
+	list-style-position: inside;
+	padding-left: 0;
+}
+
 #cityState p {
 	font-size: 20px;
 }
