@@ -17,6 +17,7 @@
 * added "Fork me on GitHub" ribbon
 * implement track location functionality
 * debug output now "teed" to debug-log
+* removed pin drop animation - looked glitchy anyway
 
 #v0.1
 ## v0.1.0
