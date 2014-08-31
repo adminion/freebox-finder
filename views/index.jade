@@ -13,9 +13,8 @@ html(lang="en")
             #page-title
                 .container
                     h1 Free-box Finder
-            #location
-                #current-location
-                    .container
+            #cityState
+                .container
             #nav
                 ul(class="nav nav-tabs", role="tablist")
                     li.active
@@ -26,36 +25,39 @@ html(lang="en")
                         a(href="#nav-new-box", data-toggle="tab" role="tab") New Box
                 .tab-content
                     div(id="nav-search", class="tab-pane active")
+                        .row &nbsp;
                         .row
-                            .col-md-4 &nbsp;
-                            div(class='input-boxes col-md-4')
+                            .input-boxes
                                 input(id="tags", placeholder="books, clothes, music, etc.")
+                                | &nbsp;
                                 button(id="search-now") Search
-                            .col-md-4 &nbsp;
                         .row &nbsp;
                     div(id="nav-location", class="tab-pane")
+                        .row &nbsp;
                         .row
-                            .col-md-4 &nbsp;
-                            div(class="input-boxes col-md-4")
+                            .input-boxes
                                 input(id='track-location', type='checkbox')
-                                label(for='track-location') Track?
+                                | &nbsp;
+                                label(for='track-location') Track Position
                         .row
-                            .col-md-4 &nbsp;
-                            div(class='input-boxes col-md-4')
+                            div(class="info", id="current-location")
+                                .container
+                        .row
+                            .input-boxes
                                 input(id="new-location", placeholder="se 12th and mall, portland")
+                                | &nbsp;
                                 button(id="set-location-now") Set Location
-                            .col-md-4 &nbsp;
                         .row &nbsp;
                     div(id="nav-new-box", class="tab-pane")
+                        .row &nbsp;
                         .row
-                            .col-md-4 &nbsp;
-                            div(class='input-boxes col-md-4')
+                            .input-boxes
                                 .row
                                     input#new-box-location 
                                 .row
                                     input(id='new-box-tags', placeholder='books, clothes, music, etc.')
+                                .row
                                     button(id="new-box-now") List FreeBox
-                            .col-md-4 &nbsp;
         #map-canvas
             p 
         #list

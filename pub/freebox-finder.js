@@ -1,11 +1,14 @@
 
-var Geocoder = google.maps.Geocoder,
+var Circle = google.maps.Circle,
+    Geocoder = google.maps.Geocoder,
     getCurrentPosition = navigator.geolocation.getCurrentPosition,
     InfoWindow = google.maps.InfoWindow,
     LatLng = google.maps.LatLng,
     LatLngBounds = google.maps.LatLngBounds,
     Map = google.maps.Map,
-    Marker = google.maps.Marker
+    Marker = google.maps.Marker,
+    Point = google.maps.Point,
+    Size = google.maps.Size
 
 var myGeocoder = new Geocoder();
 
@@ -36,6 +39,9 @@ function FreeboxFinder () {
     self.markers = [];
     self.tags = [];
 
+    var currentLocationMarker,
+        currentLocationRadius;
+
     console.log('localStorage', localStorage)
 
     // check localStorage for a cached location
@@ -59,8 +65,7 @@ function FreeboxFinder () {
         
         // get the current location
         navigator.geolocation.getCurrentPosition(function navigator_currentPosition (position) {
-            console.error('navigator_geolocation_getCurrentPosition')
-
+            
             var location = new LatLng(position.coords.latitude, position.coords.longitude)  
 
             self.location = new self.Location({ location: location }, locationConstructed);
@@ -71,8 +76,6 @@ function FreeboxFinder () {
 
     function addBoxToMap (box) {
 
-        console.error('addBoxToMap')
-
         var infoWindowOptions,
             position = new LatLng(
                 box.location.coords.lat,
@@ -82,7 +85,6 @@ function FreeboxFinder () {
         console.log('adding box to map: ', box)
 
         markerOptions = {
-            animation: google.maps.Animation.DROP,
             map: self.map,
             position: position
         }
@@ -155,8 +157,6 @@ function FreeboxFinder () {
 
     function getBoxes () {
 
-        console.error('getBoxes')
-
         self.tags = [];
 
         $('#tags')
@@ -198,14 +198,12 @@ function FreeboxFinder () {
                 break;
         }
 
-        $('#current-location .container').replaceWith("<div class='container'>" + msg + " </div>")
+        $('#cityState .container').replaceWith("<div class='container'>" + msg + " </div>")
         console.log(msg)
                 
     };
 
     function locationConstructed () {
-
-        console.error('locationConstructed')
 
         console.log('self.location.coords', self.location.coords)
 
@@ -233,8 +231,6 @@ function FreeboxFinder () {
 
     function mapChanged () {
 
-        console.error('mapChanged')
-
         var oldZip = self.location.zip();
 
         self.location.geocode({ location: self.map.center }, newLocationGeocoded);
@@ -250,17 +246,18 @@ function FreeboxFinder () {
                 if (oldZip !== parsed.postal_code.long_name) {
                     getBoxes();
                 }
-            }  
+            } else {
+                console.log('self.location', self.location)
+                self.location.setCoords(result.geometry.location)
+                setLocation();
+            } 
         };
     };
 
     function setLocation () {
 
-        console.error('setLocation')
-
-        var newLocation = "<div class='container'><p>" + self.location.cityState() + "</p></div>";
-
-        $('#current-location .container').replaceWith(newLocation)
+        $('#cityState .container').replaceWith("<div class='container'><p>" + self.location.cityState() + "</p></div>");
+        $('#current-location .container').replaceWith("<div class='container'><p>" + self.location.formatted_address + "</p></div>");
         $('#new-box-location').attr('placeholder', self.location.formatted_address);
 
         // store a LatLngLiteral to localStorage to speed up map generation and help remedy inaccurate location resolution
@@ -269,8 +266,6 @@ function FreeboxFinder () {
     };
 
     function socketBoxes (boxes) {
-
-        console.error('socketBoxes')
 
         console.log('boxes', boxes);
 
@@ -293,7 +288,7 @@ function FreeboxFinder () {
 
     function socketConnect () {
 
-        console.error('socketConnect');
+        var watchID;
 
         getBoxes();
 
@@ -303,6 +298,79 @@ function FreeboxFinder () {
             self.map.addListener('zoom_changed', mapChanged);
 
             $('#get-location').click(getLocation);
+            $('#track-location').change(function track_location_change () {
+                if (this.checked) {
+                    console.log('tracking enabled');
+
+                    var geo_options = {
+                        enableHighAccuracy: true, 
+                        maximumAge        : 30000, 
+                        timeout           : 27000
+                    };
+
+                    watchID = navigator.geolocation.watchPosition(watchPositionChanged, watchPositionError, geo_options);
+
+                    function watchPositionChanged (position) {
+
+                        console.log(position)
+
+                        var location = new LatLng(position.coords.latitude, position.coords.longitude) 
+
+                        if (currentLocationMarker) {
+                            currentLocationMarker.setPosition(location);
+                        } else {
+                            currentLocationMarker = new Marker({
+                                icon: {
+                                    anchor: new Point(5, 5),
+                                    scaledSize: new Size(10, 10),
+                                    url: 'http://upload.wikimedia.org/wikipedia/commons/5/5a/Button_Icon_BlueSky.svg'
+                                },
+                                map: self.map,
+                                position: location,
+                            });
+                        }
+
+                        if (currentLocationRadius) {
+                            currentLocationRadius.setcenter(location)
+                        } else {
+                            currentLocationRadius = new Circle({
+                                center: location,
+                                fillColor: '#3399FF',
+                                map: self.map,
+                                strokeColor: '#3300FF',
+                                strokeWeight: 0.5,
+                                radius: position.coords.accuracy
+                            });       
+                        }
+
+                        self.map.setCenter(location);
+                    };
+
+                    function watchPositionError() {
+
+                    }
+
+                }
+
+                else if (watchID) { 
+                    console.log('tracking disabled');
+                    navigator.geolocation.clearWatch(watchID);
+                    watchID = undefined;
+
+                    if (currentLocationMarker) {
+                        currentLocationMarker.setMap(null);
+                    }
+
+                    if (currentLocationRadius) {
+                        currentLocationRadius.setMap(null)
+                    }
+                }
+
+                else {
+                    console.log('hmmmm not sure what happened there...');
+                }
+            });
+
             $('#set-location-now').click(set_location_now_clicked);
             $('#new-location').keyup(function (event) {
                 if (event.which === 13) {
@@ -344,8 +412,6 @@ function FreeboxFinder () {
         };
 
         function new_box_clicked () {
-            console.error('new_box_clicked');
-
             var addressStr = $('#new-box-location').val() || self.location.formatted_address;
             var tagsArr = $('#new-box-tags').val().toLowerCase().split(',')
             var tags =[]
@@ -386,8 +452,6 @@ function FreeboxFinder () {
         };
 
         function set_location_now_clicked () {
-            console.error('set location now!');
-
             var newAddress = $('#new-location').val();
             console.log('newAddress', newAddress);
 
@@ -400,8 +464,6 @@ function FreeboxFinder () {
 
 
     function socketNewBox (box) {
-
-        console.error('socketNewBox')
 
         self.boxes.push(box);
 
@@ -505,19 +567,15 @@ Location.prototype.cityState = function () {
 
 Location.prototype.geocode = function (request, callback) {
 
-    console.error('location.geocode')
-
     var self = this;
 
     myGeocoder.geocode(request, function locationGeocoded(results, status) {
-
-        console.error('locationGeocoded')
 
         if (status == google.maps.GeocoderStatus.OK) {
 
             var result = results[0]
 
-            console.log('result', result);
+            // console.log('result', result);
 
             callback(result, status);
             
@@ -532,6 +590,9 @@ Location.prototype.geocode = function (request, callback) {
 }
 
 Location.prototype.lat = function () {
+
+
+
     return this.coords.lat;
 }
 
@@ -542,13 +603,11 @@ Location.prototype.lng = function () {
 
 Location.prototype.parseAddressComponents = function (result) {
 
-    console.error('parseAddressComponents')
-
     var component;
     var parsed = {};
     var type;
 
-    console.log('result', result)
+    // console.log('result', result)
 
     for (var index in result.address_components) {
         component = result.address_components[index];
@@ -560,7 +619,7 @@ Location.prototype.parseAddressComponents = function (result) {
         
     }
     
-    console.log('parsed', parsed)
+    // console.log('parsed', parsed)
 
     return parsed
 
@@ -572,10 +631,15 @@ Location.prototype.sameAs = function (testLocation) {
 
 };
 
+Location.prototype.setCoords = function (coords) {
+    
+    this.coords.lat = coords.lat();
+    this.coords.lng = coords.lng();
+};
+
 Location.prototype.setGeocoded = function (result, status) {
 
-        
-    console.log('result', result)
+    // console.log('result', result)
 
     var ne = result.geometry.viewport.getNorthEast();
     var sw = result.geometry.viewport.getSouthWest();
@@ -608,13 +672,9 @@ Location.prototype.toString = function () {
 
 Location.prototype.update = function (options, callback) {
 
-    console.error('Location.update')
-
     var self = this;
     
     self.geocode(options, function locationUpdated (result, status) {
-        console.error('locationUpdated')
-
         self.setGeocoded(result);
 
         callback()
