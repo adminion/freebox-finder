@@ -38,41 +38,28 @@ function FreeboxFinder () {
     self.initialized = false;
     self.markers = [];
     self.tags = [];
+    
+    var lockMapToPosition = false;
 
-    var currentLocationMarker,
-        currentLocationRadius;
+    var positionMarker,
+        positionAccuracy,
+        watchID;
 
-    console.log('localStorage', localStorage)
+    var geo_options = {
+        enableHighAccuracy: true, 
+        maximumAge        : 30000, 
+        timeout           : 27000
+    };
 
-    // check localStorage for a cached location
-    if (localStorage.getItem("FreeboxFinder_location")) {
 
-        console.log('using cached location!');
+    // get the current location
+    navigator.geolocation.getCurrentPosition(function (position) {
 
-        var cached = JSON.parse(localStorage.getItem("FreeboxFinder_location")).location;
+        self.location = new Location({location: new LatLng(position.coords.latitude, position.coords.longitude)}, function () {
+            locationConstructed(position)
+        });
 
-        console.log('cached', cached)
-        
-        self.location = new self.Location({
-            location: new LatLng(cached.lat, cached.lng)
-        }, locationConstructed);
-
-    }
-
-    else {
-
-        console.log('no cached position, using html5 navigator!');
-        
-        // get the current location
-        navigator.geolocation.getCurrentPosition(function navigator_currentPosition (position) {
-            
-            var location = new LatLng(position.coords.latitude, position.coords.longitude)  
-
-            self.location = new Location({ location: location }, locationConstructed);
-
-        }, getCurrentPositionError );
-    }
-
+    }, getCurrentPositionError, geo_options);    
 
     function addBoxToMap (box) {
 
@@ -113,8 +100,8 @@ function FreeboxFinder () {
 
         link += '>' + box.location.formatted_address + '</a>'
 
-        var infoWindowContent = '<p><strong>tags:</strong> ' + box.tags.join(', ') + '</p>'
-            + '<p><strong>location:</strong>' + link + '</p>';
+        var infoWindowContent = '<p>' + link + '</p>'
+            + '<p><strong>tags:</strong> ' + box.tags.join(', ') + '</p>';
 
         infoWindowOptions = { 
             content: infoWindowContent,
@@ -219,7 +206,7 @@ function FreeboxFinder () {
                 
     };
 
-    function locationConstructed () {
+    function locationConstructed (position) {
 
         console.log('self.location.coords', self.location.coords)
 
@@ -228,8 +215,30 @@ function FreeboxFinder () {
             center: self.location.center()
         });
 
-        self.map.fitBounds(self.location.viewport());
+        positionMarker = new Marker({
+            icon: {
+                anchor: new Point(5, 5),
+                scaledSize: new Size(10, 10),
+                url: 'https://openclipart.org/people/Jmlevick/1380001837.svg'
+            },
+            map: self.map,
+            position: self.location.center(),
+        });
+
+        positionAccuracy = new Circle({
+            center: self.location.center(),
+            fillColor: '#3399FF',
+            map: self.map,
+            strokeColor: '#3300FF',
+            strokeWeight: 0.5,
+            radius: position.coords.accuracy,
+            visible: false
+        });
+
+        self.map.fitBounds(positionAccuracy.getBounds());
         setLocation();
+
+        navigator.geolocation.watchPosition(positionChanged, watchPositionError, geo_options);
 
        // setup socket
         self.socket = io();
@@ -242,16 +251,14 @@ function FreeboxFinder () {
 
         self.socket.on('shutdown', function () {
             console.log('received shutdown signal from server!');
-            self.socket.close();
-            self.socket = undefined;
         });
 
         console.log('self', self);
     };
 
     function mapChanged () {
-
-        var oldZip = self.location.zip();
+        
+        var oldCityState = self.location.cityState();
 
         self.location.geocode({ location: self.map.center }, newLocationGeocoded);
 
@@ -259,11 +266,15 @@ function FreeboxFinder () {
 
             var parsed = self.location.parseAddressComponents(result);
 
+            var newCityState = parsed.locality.long_name + ', ' + parsed.administrative_area_level_1.short_name;
+
+            console.log('newCityState', newCityState)
+
             if (self.location.formatted_address !== result.formatted_address) {
                 self.location.setGeocoded(result)
                 setLocation();
 
-                if (oldZip !== parsed.postal_code.long_name) {
+                if (oldCityState !== newCityState) {
                     getBoxes();
                 }
             } else {
@@ -274,14 +285,33 @@ function FreeboxFinder () {
         };
     };
 
+    function positionChanged (position) {
+
+        console.log('position', position)
+
+        var location = new LatLng(position.coords.latitude, position.coords.longitude);
+
+        positionMarker.setPosition(location);
+        positionAccuracy.setCenter(location);
+
+        if (lockMapToPosition) {
+            self.map.setCenter(positionAccuracy.getCenter());
+            self.location.update({location: location}, setLocation);
+        }
+        
+
+    };
+
+    function watchPositionError() {
+
+    }
+
+
     function setLocation () {
 
         $('#cityState .container').replaceWith("<div class='container'><p>" + self.location.cityState() + "</p></div>");
         $('#current-location .container').replaceWith("<div class='container'><p>" + self.location.formatted_address + "</p></div>");
         $('#new-box-location').attr('placeholder', self.location.formatted_address);
-
-        // store a LatLngLiteral to localStorage to speed up map generation and help remedy inaccurate location resolution
-        localStorage.setItem('FreeboxFinder_location', JSON.stringify({ location: self.location.coords }) );
 
     };
 
@@ -300,98 +330,37 @@ function FreeboxFinder () {
         self.infoWindows = [];
         self.markers = [];
 
-        var boxesList = '<div id="results"><ol>';
-
-        boxes.forEach(function (box, id) {
-            addBoxToMap(box)
-
-            boxesList += '<li><a id="box-' + id + '">' + box.location.formatted_address + '</a></li>';
-        });
-
-        boxesList += '</ol></div>';
-
-        $('#results').replaceWith(boxesList);
+        updateBoxesList()
     };
 
     function socketConnect () {
-
-        var watchID;
 
         getBoxes();
 
         if (!self.initialized) {
 
-            self.map.addListener('dragend', mapChanged);
+            self.map.addListener('dragend', function () {
+                lockMapToPosition = false;
+                mapChanged();
+            });
+
             self.map.addListener('zoom_changed', mapChanged);
 
-            $('#track-location').click(function track_location_change () {
+            $('#follow-me').click(function followMeChange () {
                 if (this.checked) {
-                    console.log('tracking enabled');
+                    console.log('position lock enabled');
 
-                    var geo_options = {
-                        enableHighAccuracy: true, 
-                        maximumAge        : 30000, 
-                        timeout           : 27000
-                    };
-
-                    watchID = navigator.geolocation.watchPosition(watchPositionChanged, watchPositionError, geo_options);
-
-                    function watchPositionChanged (position) {
-
-                        console.log('position', position)
-
-                        var location = new LatLng(position.coords.latitude, position.coords.longitude) 
-
-                        if (currentLocationMarker) {
-                            currentLocationMarker.setPosition(location);
-                            currentLocationMarker.setVisible(true);
-                        } else {
-                            currentLocationMarker = new Marker({
-                                icon: {
-                                    anchor: new Point(5, 5),
-                                    scaledSize: new Size(10, 10),
-                                    url: 'http://upload.wikimedia.org/wikipedia/commons/5/5a/Button_Icon_BlueSky.svg'
-                                },
-                                map: self.map,
-                                position: location,
-                            });
-                        }
-
-                        if (currentLocationRadius) {
-                            currentLocationRadius.setCenter(location);
-                            currentLocationRadius.setVisible(true);
-                        } else {
-                            currentLocationRadius = new Circle({
-                                center: location,
-                                fillColor: '#3399FF',
-                                map: self.map,
-                                strokeColor: '#3300FF',
-                                strokeWeight: 0.5,
-                                radius: position.coords.accuracy
-                            });       
-                        }
-
-                        self.map.setCenter(location);
-                    };
-
-                    function watchPositionError() {
-
-                    }
+                    positionAccuracy.setVisible(true);
+                    lockMapToPosition = true;
 
                 }
 
                 else { 
                     console.log('tracking disabled');
-                    navigator.geolocation.clearWatch(watchID);
-                    watchID = undefined;
+                    
+                    positionAccuracy.setVisible(false);
+                    lockMapToPosition = false;
 
-                    if (currentLocationRadius) {
-                        currentLocationRadius.setVisible(false)
-                    }
-
-                    if (currentLocationMarker) {
-                        currentLocationMarker.setVisible(false)
-                    }
                 }
 
             });
@@ -421,20 +390,6 @@ function FreeboxFinder () {
 
             self.initialized = true;
         }
-
-        function getLocation () {
-            // get the current location
-            navigator.geolocation.getCurrentPosition(function (position) {
-
-                var location = new LatLng(position.coords.latitude, position.coords.longitude)  
-
-                self.location.update({ location: location }, function () {
-                    self.map.fitBounds(self.location.viewport());
-                    setLocation();
-                });
-
-            }, getCurrentPositionError);
-        };
 
         function new_box_clicked () {
             var addressStr = $('#new-box-location').val() || self.location.formatted_address;
@@ -477,7 +432,10 @@ function FreeboxFinder () {
         };
 
         function set_location_now_clicked () {
-            $('#track-location').click();
+            followMe = $('#follow-me')[0];
+
+            if (followMe.checked) {
+                followMe.click(); }
 
             var newAddress = $('#new-location').val();
             console.log('newAddress', newAddress);
@@ -497,6 +455,22 @@ function FreeboxFinder () {
         console.log('new box:', box)
 
         addBoxToMap(box);
+        updateBoxesList();
+
+    };
+
+    function updateBoxesList () {
+        var boxesList = '<div id="results"><ol>';
+
+        self.boxes.forEach(function (box, id) {
+            addBoxToMap(box)
+
+            boxesList += '<li><a id="box-' + id + '">' + box.location.formatted_address + '</a></li>';
+        });
+
+        boxesList += '</ol></div>';
+
+        $('#results').replaceWith(boxesList);
     };
 
 };
