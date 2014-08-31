@@ -18,6 +18,8 @@
 * implement track location functionality
 * debug output now "teed" to debug-log
 * removed pin drop animation - looked glitchy anyway
+* box location links are desktop/mobile compatible
+* list of search results updated when boxes received
 
 #v0.1
 ## v0.1.0

@@ -68,7 +68,7 @@ function FreeboxFinder () {
             
             var location = new LatLng(position.coords.latitude, position.coords.longitude)  
 
-            self.location = new self.Location({ location: location }, locationConstructed);
+            self.location = new Location({ location: location }, locationConstructed);
 
         }, getCurrentPositionError );
     }
@@ -97,8 +97,24 @@ function FreeboxFinder () {
 
         console.log('query', query);
 
+        var mobile = (/android/g.test(ua) || /(ipad|iphone|ipod)/g.test(ua));
+
+        var ua = navigator.userAgent.toLowerCase();
+
+        var linkUrl = (mobile)
+            ? "geo:0,0?='" + query + "'" 
+            : "http://google.com/maps/place/" + query;
+
+        var link = '<a href="' + linkUrl + '"';
+
+        if (!mobile) {
+            link += ' target="_blank"';
+        }
+
+        link += '>' + box.location.formatted_address + '</a>'
+
         var infoWindowContent = '<p><strong>tags:</strong> ' + box.tags.join(', ') + '</p>'
-            + '<p><strong>location:</strong> <a href="geo:0,0?q=' + query + '">' + box.location.formatted_address + '</a></p>';
+            + '<p><strong>location:</strong>' + link + '</p>';
 
         infoWindowOptions = { 
             content: infoWindowContent,
@@ -224,9 +240,13 @@ function FreeboxFinder () {
 
         self.socket.on('new-box', socketNewBox)
 
+        self.socket.on('shutdown', function () {
+            console.log('received shutdown signal from server!');
+            self.socket.close();
+            self.socket = undefined;
+        });
+
         console.log('self', self);
-
-
     };
 
     function mapChanged () {
@@ -280,10 +300,17 @@ function FreeboxFinder () {
         self.infoWindows = [];
         self.markers = [];
 
-        boxes.forEach(function (box) {
+        var boxesList = '<div id="results"><ol>';
+
+        boxes.forEach(function (box, id) {
             addBoxToMap(box)
 
+            boxesList += '<li><a id="box-' + id + '">' + box.location.formatted_address + '</a></li>';
         });
+
+        boxesList += '</ol></div>';
+
+        $('#results').replaceWith(boxesList);
     };
 
     function socketConnect () {
@@ -297,8 +324,7 @@ function FreeboxFinder () {
             self.map.addListener('dragend', mapChanged);
             self.map.addListener('zoom_changed', mapChanged);
 
-            $('#get-location').click(getLocation);
-            $('#track-location').change(function track_location_change () {
+            $('#track-location').click(function track_location_change () {
                 if (this.checked) {
                     console.log('tracking enabled');
 
@@ -312,12 +338,13 @@ function FreeboxFinder () {
 
                     function watchPositionChanged (position) {
 
-                        console.log(position)
+                        console.log('position', position)
 
                         var location = new LatLng(position.coords.latitude, position.coords.longitude) 
 
                         if (currentLocationMarker) {
                             currentLocationMarker.setPosition(location);
+                            currentLocationMarker.setVisible(true);
                         } else {
                             currentLocationMarker = new Marker({
                                 icon: {
@@ -331,7 +358,8 @@ function FreeboxFinder () {
                         }
 
                         if (currentLocationRadius) {
-                            currentLocationRadius.setcenter(location)
+                            currentLocationRadius.setCenter(location);
+                            currentLocationRadius.setVisible(true);
                         } else {
                             currentLocationRadius = new Circle({
                                 center: location,
@@ -352,23 +380,20 @@ function FreeboxFinder () {
 
                 }
 
-                else if (watchID) { 
+                else { 
                     console.log('tracking disabled');
                     navigator.geolocation.clearWatch(watchID);
                     watchID = undefined;
 
-                    if (currentLocationMarker) {
-                        currentLocationMarker.setMap(null);
-                    }
-
                     if (currentLocationRadius) {
-                        currentLocationRadius.setMap(null)
+                        currentLocationRadius.setVisible(false)
+                    }
+
+                    if (currentLocationMarker) {
+                        currentLocationMarker.setVisible(false)
                     }
                 }
 
-                else {
-                    console.log('hmmmm not sure what happened there...');
-                }
             });
 
             $('#set-location-now').click(set_location_now_clicked);
@@ -452,6 +477,8 @@ function FreeboxFinder () {
         };
 
         function set_location_now_clicked () {
+            $('#track-location').click();
+
             var newAddress = $('#new-location').val();
             console.log('newAddress', newAddress);
 
