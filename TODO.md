@@ -10,7 +10,6 @@
 
 ## v0.2.0
 * only add link to google maps if requested via android
-* clean UI
 
 # v0.1
 ## v0.1.0
