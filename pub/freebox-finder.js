@@ -293,6 +293,7 @@ function FreeboxFinder () {
 
         positionMarker.setPosition(location);
         positionAccuracy.setCenter(location);
+	positionAccuracy.setRadius(position.coords.accuracy);	
 
         if (lockMapToPosition) {
             self.map.setCenter(positionAccuracy.getCenter());
