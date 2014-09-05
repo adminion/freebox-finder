@@ -1,5 +1,6 @@
 
-var Circle = google.maps.Circle,
+var Animation = google.maps.Animation,
+    Circle = google.maps.Circle,
     Geocoder = google.maps.Geocoder,
     getCurrentPosition = navigator.geolocation.getCurrentPosition,
     InfoWindow = google.maps.InfoWindow,
@@ -51,15 +52,40 @@ function FreeboxFinder () {
         timeout           : 27000
     };
 
+    if ('FreeboxFinder' in localStorage) {
 
-    // get the current location
-    navigator.geolocation.getCurrentPosition(function (position) {
+        var fbf = localStorage.getItem('FreeboxFinder');
+        console.log('fbf', fbf)
 
-        self.location = new Location({location: new LatLng(position.coords.latitude, position.coords.longitude)}, function () {
-            locationConstructed(position)
+        var cache = JSON.parse(fbf);
+
+        var coords = new LatLng(cache.latitude, cache.longitude);
+
+        self.location = new Location({location: coords}, function () {
+            locationConstructed({ coords: {
+                    accuracy: 100,
+                    latitude: cache.latitude,
+                    longitude: cache.longitude
+                }    
+            })
         });
 
-    }, getCurrentPositionError, geo_options);    
+    } else {
+        // get the current location
+        navigator.geolocation.getCurrentPosition(function (position) {
+
+            var coords = new LatLng(position.coords.latitude, position.coords.longitude)
+
+            self.location = new Location({location: coords}, function () {
+                
+                localStorage.setItem('FreeboxFinder', JSON.stringify(position.coords));    
+                locationConstructed(position)
+            });
+
+        }, getCurrentPositionError, geo_options);    
+        
+    };
+
 
     function addBoxToMap (box) {
 
@@ -72,6 +98,7 @@ function FreeboxFinder () {
         console.log('adding box to map: ', box)
 
         markerOptions = {
+            animation: Animation.DROP,
             map: self.map,
             position: position
         }
@@ -100,8 +127,8 @@ function FreeboxFinder () {
 
         link += '>' + box.location.formatted_address + '</a>'
 
-        var infoWindowContent = '<p>' + link + '</p>'
-            + '<p><strong>tags:</strong> ' + box.tags.join(', ') + '</p>';
+        var infoWindowContent = '<p><strong>tags:</strong> ' + box.tags.join(', ') + '</p>'
+            + '<p>' + link + '</p>';
 
         infoWindowOptions = { 
             content: infoWindowContent,
@@ -113,9 +140,22 @@ function FreeboxFinder () {
         self.infoWindows.push(infoWindow);
 
         marker.addListener('click', function () {
-            infoWindow.open(self.map, marker);
-        })
 
+            self.infoWindows.forEach(function(infoWindow) {
+                infoWindow.close();
+            });
+
+            // if the infoWindow is open on a map
+            if (infoWindow.getMap()) {
+                // close it
+                infoWindow.close();
+            // if it is NOT on a map
+            } else{
+                // open it
+                infoWindow.open(self.map, marker);
+            }
+            
+        });
 
     };
 
@@ -289,11 +329,13 @@ function FreeboxFinder () {
 
         console.log('position', position)
 
+        localStorage.setItem('FreeboxFinder', JSON.stringify(position.coords));
+
         var location = new LatLng(position.coords.latitude, position.coords.longitude);
 
         positionMarker.setPosition(location);
         positionAccuracy.setCenter(location);
-	positionAccuracy.setRadius(position.coords.accuracy);	
+	    positionAccuracy.setRadius(position.coords.accuracy);	
 
         if (lockMapToPosition) {
             self.map.setCenter(positionAccuracy.getCenter());
@@ -324,14 +366,18 @@ function FreeboxFinder () {
 
         console.log('self.boxes', self.boxes)
 
-        for (var marker in self.markers) {
-            self.markers[marker].setMap();
-        }
+        self.markers.forEach(function (marker) {
+            marker.setMap(null);
+        });
 
         self.infoWindows = [];
         self.markers = [];
 
-        updateBoxesList()
+        self.boxes.forEach(function (box) {
+            addBoxToMap(box);
+        });
+
+        updateBoxesList();
     };
 
     function socketConnect () {
@@ -442,10 +488,17 @@ function FreeboxFinder () {
             console.log('newAddress', newAddress);
 
             self.location.geocode({address: newAddress}, function (result, status) {
+                localStorage.setItem('FreeboxFinder',JSON.stringify({ 
+                    accuracy: 100,
+                    latitude: result.geometry.location.lat(),
+                    longitude: result.geometry.location.lng()
+                }));
+
+                console.log('localStorage.FreeboxFinder', localStorage.getItem('FreeboxFinder'))
+
                 self.map.fitBounds(result.geometry.viewport);
             });
         };
-
     };
 
 
@@ -464,14 +517,43 @@ function FreeboxFinder () {
         var boxesList = '<div id="results"><ol>';
 
         self.boxes.forEach(function (box, id) {
-            addBoxToMap(box)
+            var streetAddress = box.location.address_components.street_number.long_name + " "
+                + box.location.address_components.route.long_name;
 
-            boxesList += '<li><a id="box-' + id + '">' + box.location.formatted_address + '</a></li>';
+            boxesList += '<li><a id="box-' + id + '">' + streetAddress + '</a></li>';
         });
 
         boxesList += '</ol></div>';
 
         $('#results').replaceWith(boxesList);
+
+        // loop through each box
+        self.boxes.forEach(function (box, id) {
+
+            var stopAnimationTimeout;
+
+            // make the 'id' work
+            (function (id) {
+                // assign the box a click handler
+                $('#box-' + id).click(function () {
+
+                    var boxCoords = new LatLng(box.location.coords.lat, box.location.coords.lng);
+
+                    // pan to the box, and trigger the DROP animation
+                    self.map.panTo(boxCoords);
+
+                    if (!stopAnimationTimeout) {
+                        self.markers[id].setAnimation(Animation.BOUNCE);
+                        
+                        stopAnimationTimeout = setTimeout(function () {
+                            self.markers[id].setAnimation(null);
+                            stopAnimationTimeout = null;
+                        },1400);
+                    }
+                });
+            }(id));
+        });
+
     };
 
 };
@@ -659,6 +741,12 @@ Location.prototype.setGeocoded = function (result, status) {
     this.bounds.sw.lng = sw.lng();
 
     console.log('this', this);
+
+}
+
+Location.prototype.streetAddress = function () {
+
+    return this.address_components.street_number.long_name + " " + this.address_components.route.long_name;
 
 }
 
