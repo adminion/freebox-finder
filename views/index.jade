@@ -18,51 +18,58 @@ html(lang="en")
             #nav
                 ul(class="nav nav-tabs", role="tablist")
                     li.active
-                        a(href="#nav-search", data-toggle="tab", role="tab") Search 
-                    li
                         a(href="#nav-location", data-toggle="tab", role="tab") Location
                     li
-                        a(href="#nav-new-box", data-toggle="tab" role="tab") New Box
+                        a(href="#nav-search", data-toggle="tab", role="tab") Search 
+                    li
+                        a(href="#nav-new-box", data-toggle="tab" role="tab") Post
                 .tab-content
-                    div(id="nav-search", class="tab-pane active")
+                    div(id="nav-location", class="tab-pane active")
+                        .row
+                            .input-boxes
+                                input(id='lock-map-to-position', type='checkbox')
+                                | &nbsp;
+                                label(for='lock-map-to-position') Center Map on Current Position
+                        .row
+                            div(class="info", id="current-location")
+                                .container
+                        .row
+                            .input-boxes
+                                input(id="new-location", size="35", placeholder="portland, or")
+                                | &nbsp;
+                                button(id="set-location-now") Set Location
                         .row &nbsp;
+                    div(id="nav-search", class="tab-pane")
+                        .row &nbsp;
+                        .row
+                            .container
+                                p 
+                                    i Search for boxes with tags separated by commas:
                         .row
                             .input-boxes
                                 input(id="tags", placeholder="books, clothes, music, etc.")
                                 | &nbsp;
                                 button(id="search-now") Search
                         .row &nbsp;
-                    div(id="nav-location", class="tab-pane")
-                        .row &nbsp;
-                        .row
-                            .input-boxes
-                                input(id='follow-me', type='checkbox')
-                                | &nbsp;
-                                label(for='follow-me') Follow Me
-                        .row
-                            div(class="info", id="current-location")
-                                .container
-                        .row
-                            .input-boxes
-                                input(id="new-location", size="50", placeholder="portland, or")
-                                | &nbsp;
-                                button(id="set-location-now") Set Location
-                        .row &nbsp;
                     div(id="nav-new-box", class="tab-pane")
-                        .row &nbsp;
+                        .row
+                            .container
+                                p 
+                                    i Post a box with tags:
                         .row
                             .input-boxes
                                 .row
                                     input(id='new-box-tags', placeholder='books, clothes, music, etc.')
                                 .row
-                                    input(id='new-box-location', size="50")
+                                    input(id='new-box-location', size="35")
                                 .row
-                                    button(id="new-box-now") List FreeBox
+                                    button(id="new-box-now") Post
         #map-canvas
             p 
         #boxes-list
             h3 Search Results
             #results
+                ol
         #footer
             a(id="termsTrigger") Terms and Conditions
             #terms
