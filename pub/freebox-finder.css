@@ -44,6 +44,7 @@ body {
 
 #boxes-list ol {
 	list-style-position: inside;
+	list-style-type: upper-latin;
 	padding-left: 0;
 }
 
@@ -69,6 +70,10 @@ body {
 
 #nav { 
 	height: 150px;
+}
+
+#nav-location {
+	padding-top: 10px;
 }
 
 #terms {

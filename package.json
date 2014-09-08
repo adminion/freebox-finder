@@ -1,6 +1,6 @@
 {
   "name": "freebox-finder",
-  "version": "0.2.0-beta",
+  "version": "0.2.0",
   "description": "Find / List free boxes by location or category",
   "main": "index.js",
   "scripts": {
